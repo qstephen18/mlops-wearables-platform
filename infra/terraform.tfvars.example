@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+budget_alert_email = "you@example.com"
+
+# Defaults in variables.tf cover the rest. Override only if needed:
+# region             = "us-east-2"
+# monthly_budget_usd = 10
