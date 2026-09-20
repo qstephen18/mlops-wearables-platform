@@ -13,10 +13,9 @@ output "github_actions_role_arn" {
 }
 
 output "region" {
-  value = data.aws_region.current.name
+  value = data.aws_region.current.region
 }
 
 output "account_id" {
-  value     = data.aws_caller_identity.current.account_id
-  sensitive = true
+  value = data.aws_caller_identity.current.account_id
 }

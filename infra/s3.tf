@@ -6,6 +6,11 @@ locals {
 
 resource "aws_s3_bucket" "platform" {
   bucket = local.bucket_name
+
+  # Lab account: teardown needs to be one command. Never set this in an
+  # environment where the data matters — it lets Terraform delete a bucket
+  # and every object version in it without complaint.
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "platform" {

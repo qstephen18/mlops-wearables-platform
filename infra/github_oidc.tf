@@ -5,10 +5,6 @@
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
-
-  # AWS no longer validates thumbprints for well-known IdPs, but the API still
-  # requires the field. This value is GitHub's published root and is inert.
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
 
 data "aws_iam_policy_document" "github_assume_role" {
@@ -45,9 +41,9 @@ resource "aws_iam_role" "github_actions" {
 
 data "aws_iam_policy_document" "ci_permissions" {
   statement {
-    sid     = "BucketLevel"
-    effect  = "Allow"
-    actions = ["s3:ListBucket", "s3:GetBucketLocation"]
+    sid       = "BucketLevel"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket", "s3:GetBucketLocation"]
     resources = [aws_s3_bucket.platform.arn]
   }
 
