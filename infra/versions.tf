@@ -12,12 +12,12 @@ terraform {
 
   # Local state to start. Once the bucket below exists, uncomment this and run
   # `terraform init -migrate-state` to move state into S3 with native locking.
-  #
-  # backend "s3" {
-  #   bucket       = "mlops-wearables-platform-<account_id>"
-  #   key          = "infra/terraform.tfstate"
-  #   region       = "us-east-2"
-  #   encrypt      = true
-  #   use_lockfile = true
-  # }
+
+  backend "s3" {
+    bucket       = "mlops-wearables-platform-588804758887"
+    key          = "infra/terraform.tfstate"
+    region       = "us-east-2"
+    encrypt      = true
+    use_lockfile = true
+  }
 }
