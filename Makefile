@@ -22,7 +22,7 @@ plan: validate ## Show what would change
 apply: ## Apply changes
 	$(TF) apply
 
-destroy: ## Tear everything down. Run this before you close the laptop.
+destroy: ## Tear down infra. WARNING: state lives in this bucket — see README.
 	$(TF) destroy
 
 cost: ## Month-to-date spend. Run when you sit down and when you stop.
