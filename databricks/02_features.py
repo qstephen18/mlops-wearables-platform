@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # MAGIC %md
 # MAGIC # 02 — Features
 # MAGIC
@@ -151,3 +155,20 @@ display(
     .count()
     .orderBy("activity_id", "split")
 )
+
+# COMMAND ----------
+
+# Confirm the NaN normalization propagated through the forward-fill.
+# If HR features are null, the model trains without heart rate and
+# still produces a plausible-looking score.
+null_rates = (
+    spark.table(FEATURES)
+    .select(
+        F.avg(F.col("heart_rate_mean").isNull().cast("int")).alias("hr"),
+        F.avg(F.col("hand_acc16_x_mean").isNull().cast("int")).alias("acc"),
+    )
+    .first()
+)
+
+assert null_rates["hr"] < 0.05, f"HR feature null rate {null_rates['hr']:.3f} — forward-fill likely failed"
+assert null_rates["acc"] < 0.05, f"IMU feature null rate {null_rates['acc']:.3f} — check sensor dropout handling"
