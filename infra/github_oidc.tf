@@ -64,3 +64,14 @@ resource "aws_iam_role_policy" "ci_permissions" {
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.ci_permissions.json
 }
+
+# terraform plan must read every managed resource to detect drift, which spans
+# IAM, budgets and S3 configuration. ReadOnlyAccess is broader than this project
+# needs, but it is read-only and the alternative is enumerating a describe/get
+# permission per resource type and updating it every time the stack grows.
+# Write access stays scoped to the state prefix via the inline policy above:
+# this role can plan, never apply.
+resource "aws_iam_role_policy_attachment" "ci_readonly" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
