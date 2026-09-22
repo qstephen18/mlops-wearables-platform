@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # MAGIC %md
 # MAGIC # 01 — Ingest
 # MAGIC
@@ -66,9 +70,23 @@ readings = raw.withColumn(
 # COMMAND ----------
 
 drop_cols = [c for c in readings.columns if "orient_" in c]
+sensor_cols = [c for c in COLUMNS if c not in drop_cols]
+
+# NaN and null are different in Spark: isNull() is false for NaN, and
+# last(ignorenulls=True) skips nulls but not NaN. The source files encode
+# missing readings as NaN, so normalize to null here — otherwise the HR
+# forward-fill silently fails and every aggregate over a gap returns NaN.
+normalized = readings.select(
+    *[
+        F.when(F.isnan(F.col(c)), None).otherwise(F.col(c)).alias(c)
+        if c in sensor_cols else F.col(c)
+        for c in readings.columns
+        if c not in drop_cols
+    ]
+)
 
 bronze = (
-    readings.drop(*drop_cols)
+    normalized
     .filter(F.col("activity_id") != 0)  # transient periods
     .filter(F.col("subject_id").isNotNull())
     .withColumn("activity_id", F.col("activity_id").cast("int"))
