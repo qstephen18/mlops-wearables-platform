@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # MAGIC %md
 # MAGIC # 04 — Register and promote
 # MAGIC
@@ -103,17 +107,18 @@ passed = all(checks.values())
 # COMMAND ----------
 
 # Record the decision on the version itself, pass or fail.
+# Unity Catalog reserves '.' in tag keys, so underscores throughout.
 tags = {
-    "gate.passed": str(passed).lower(),
-    "gate.metric": METRIC,
-    "gate.candidate_score": f"{candidate_score:.4f}",
-    "gate.floor": str(ABSOLUTE_FLOOR),
-    "gate.regression_tolerance": str(REGRESSION_TOLERANCE),
-    "gate.comparison": regression_note,
-    "source.run_id": run_id,
+    "gate_passed": str(passed).lower(),
+    "gate_metric": METRIC,
+    "gate_candidate_score": f"{candidate_score:.4f}",
+    "gate_floor": str(ABSOLUTE_FLOOR),
+    "gate_regression_tolerance": str(REGRESSION_TOLERANCE),
+    "gate_comparison": regression_note,
+    "source_run_id": run_id,
 }
 for name, ok in checks.items():
-    tags[f"gate.check.{name}"] = str(ok).lower()
+    tags[f"gate_check_{name}"] = str(ok).lower()
 
 for k, v in tags.items():
     client.set_model_version_tag(MODEL_NAME, version.version, k, v)
