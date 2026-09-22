@@ -122,3 +122,21 @@ display(
     )
     .orderBy("subject_id")
 )
+
+# COMMAND ----------
+
+# Fail loudly if the source looks wrong. The NaN-vs-null bug passed every
+# other check and would have silently disabled heart rate as a feature.
+hr_null_rate = (
+    spark.table(BRONZE)
+    .select(F.avg(F.col("heart_rate").isNull().cast("int")).alias("r"))
+    .first()["r"]
+)
+subject_count = spark.table(BRONZE).select("subject_id").distinct().count()
+
+assert 0.85 <= hr_null_rate <= 0.95, (
+    f"Heart rate null rate {hr_null_rate:.3f} outside expected 0.85-0.95. "
+    "HR samples at ~9Hz against 100Hz IMU; a rate near 0 usually means "
+    "NaN was not normalized to null."
+)
+assert subject_count == 9, f"Expected 9 subjects, found {subject_count}"
