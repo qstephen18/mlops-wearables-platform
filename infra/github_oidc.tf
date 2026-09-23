@@ -23,12 +23,13 @@ data "aws_iam_policy_document" "github_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Scoped to this repository only. Without this condition, any GitHub repo
-    # anywhere could assume the role.
+    # The sub claim carries immutable numeric IDs appended to both the owner and
+    # the repo name: repo:owner@<id>/name@<id>:<ref>. An exact owner/name match
+    # never fires. Wildcards span the ID suffixes while still pinning both.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:*"]
+      values   = ["repo:${split("/", var.github_repo)[0]}*/${split("/", var.github_repo)[1]}*:*"]
     }
   }
 }
@@ -63,4 +64,15 @@ resource "aws_iam_role_policy" "ci_permissions" {
   name   = "${var.project}-ci"
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.ci_permissions.json
+}
+
+# terraform plan must read every managed resource to detect drift, which spans
+# IAM, budgets and S3 configuration. ReadOnlyAccess is broader than this project
+# needs, but it is read-only and the alternative is enumerating a describe/get
+# permission per resource type and updating it every time the stack grows.
+# Write access stays scoped to the state prefix via the inline policy above:
+# this role can plan, never apply.
+resource "aws_iam_role_policy_attachment" "ci_readonly" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
