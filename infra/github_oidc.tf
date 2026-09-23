@@ -23,12 +23,13 @@ data "aws_iam_policy_document" "github_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Scoped to this repository only. Without this condition, any GitHub repo
-    # anywhere could assume the role.
+    # The sub claim carries immutable numeric IDs appended to both the owner and
+    # the repo name: repo:owner@<id>/name@<id>:<ref>. An exact owner/name match
+    # never fires. Wildcards span the ID suffixes while still pinning both.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:*"]
+      values   = ["repo:${split("/", var.github_repo)[0]}*/${split("/", var.github_repo)[1]}*:*"]
     }
   }
 }
