@@ -20,6 +20,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: diagnose
+        run: |
+          if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+            echo "NO OIDC TOKEN ENDPOINT — permissions not taking effect"
+          else
+            echo "OIDC token endpoint present"
+          fi
+          ROLE='${{ vars.AWS_ROLE_ARN }}'
+          echo "role length: ${#ROLE}"
+          echo "role tail: ${ROLE: -40}"
+          echo "repo: ${{ github.repository }}"
+          echo "sub would be: repo:${{ github.repository }}:pull_request"
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
