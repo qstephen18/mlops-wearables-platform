@@ -306,6 +306,61 @@ right one for deliberate inspection.
 
 ---
 
+## Testing
+
+Three layers, split by what they need to run.
+
+### Unit tests — pure Python, no Spark
+
+`src/promotion.py` and `src/drift.py` hold the promotion gate and the drift
+statistics as plain functions. They run in under a second on every pull request.
+
+The gate is the most consequential logic in the project — it decides what
+reaches production — and it lived inside a notebook, where it could not be
+tested at all. Extracting it was the work; the tests came after.
+
+Boundaries are tested explicitly, and that is how a real bug surfaced: a
+candidate exactly at the regression tolerance was being rejected, because
+`0.84 - 0.85` is `-0.010000000000000009` rather than `-0.01`. The gate now
+absorbs floating-point representation error at threshold comparisons. Reading
+the code would not have found it.
+
+Drift tests weight edge cases over the happy path: an empty comparison set, a
+constant reference that collapses the quantile edges, disjoint ranges that
+would divide by zero without the epsilon floor. Each returns NaN rather than
+`0.0`, because `0.0` means "no drift" and would be indistinguishable from a
+working monitor.
+
+### Unit tests — local Spark
+
+`src/features.py` holds the transforms. One test pins the NaN-versus-null bug:
+`isNull()` is false for NaN, and `last(ignorenulls=True)` skips nulls but not
+NaN. A second test asserts the raw Spark behaviour that caused it, so the
+reason the normalisation exists is documented in executable form.
+
+These need a JVM, so they run in CI rather than locally.
+
+### Integration tests — real tables, real workspace
+
+`tests/integration/` asserts properties the next stage depends on: heart rate
+null rate inside the range the source sampling implies, no subject present in
+both splits, every activity present in both splits, no null keys, and lineage
+columns populated on every prediction.
+
+The split-leakage check matters most. Subject-level evaluation is the project's
+central claim about honest measurement, and a join or a backfill could break it
+without changing a single row count.
+
+### What runs where
+
+| Layer | Needs | Runs on | Duration |
+|---|---|---|---|
+| Unit, pure | nothing | every PR | < 1s |
+| Unit, Spark | JVM + PySpark | every PR (CI) | seconds |
+| Integration | workspace + data | after deploy | minutes |
+
+---
+
 ## Known limitations
 
 - **Subject 109 contributes 6,391 rows and one activity** — a documented property
