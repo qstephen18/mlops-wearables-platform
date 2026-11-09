@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'databricks/**', '.github/workflows/tests.yml']
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # PySpark needs a JVM. Without this the spark-marked tests fail with a
+      # JAVA_HOME error that looks nothing like the real cause.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: install
+        run: pip install -r requirements-dev.txt
+
+      # Pure-Python tests first: seconds, and they catch most regressions.
+      - name: unit tests (no spark)
+        run: pytest tests/unit -m "not spark"
+
+      - name: unit tests (spark)
+        run: pytest tests/unit -m spark
